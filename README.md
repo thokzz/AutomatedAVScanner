@@ -1,6 +1,6 @@
 AutomatedAVScanner
 
-![Uploading AutomatedAVScanner App Scanning.png…]()
+![AutomatedAVScanner Screenshot](https://github.com/thokzz/AutomatedAVScanner/blob/main/assets/AutomatedAVScanner%20App%20Scanning.png?raw=true)
 
 
 Automated USB & External Drive Virus Scanner for macOS
