@@ -1,0 +1,172 @@
+DriveScanner Technical Architecture
+This document provides a comprehensive overview of the architecture and design patterns used in the DriveScanner application, highlighting its modularity, concurrency model, and integration with macOS system services.
+
+System Architecture Overview
+DriveScanner employs a multi-layered architecture with clear separation of concerns:
+
+┌─────────────────────────────────────────────────┐
+│                  User Interface                  │
+│  ┌─────────────┐ ┌─────────────┐ ┌───────────┐  │
+│  │ ContentView │ │  ScanView   │ │ SettingsView │
+│  └─────────────┘ └─────────────┘ └───────────┘  │
+├─────────────────────────────────────────────────┤
+│                 Coordination Layer               │
+│  ┌───────────────┐      ┌────────────────────┐  │
+│  │ AppCoordinator │◄────►│ TransactionManager │  │
+│  └───────┬───────┘      └────────────────────┘  │
+│          │                                       │
+│  ┌───────▼───────┐      ┌────────────────────┐  │
+│  │  ScanHandler  │◄────►│ PhysicalDriveTracker│  │
+│  └───────────────┘      └────────────────────┘  │
+├─────────────────────────────────────────────────┤
+│              Core Functionality Layer            │
+│  ┌─────────────┐ ┌───────────┐ ┌──────────────┐ │
+│  │ VolumeMonitor│ │ScanEngine │ │ PrintManager │ │
+│  └─────────────┘ └───────────┘ └──────────────┘ │
+│  ┌─────────────┐ ┌───────────┐ ┌──────────────┐ │
+│  │ FileCounter │ │AuditLogger│ │AudioCueManager│ │
+│  └─────────────┘ └───────────┘ └──────────────┘ │
+├─────────────────────────────────────────────────┤
+│                   System Integration             │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────┐ │
+│  │ ClamAV Engine│ │ macOS Printing│ │ Disk API │ │
+│  └──────────────┘ └──────────────┘ └──────────┘ │
+└─────────────────────────────────────────────────┘
+Key Components
+1. User Interface Layer
+Built entirely with SwiftUI, the UI layer consists of:
+
+ContentView: Main container view with tab navigation
+ScanView: Real-time display of connected drives and scan status
+TransactionHistoryView: Displays historical scan records
+SettingsView: Configuration options for scanning behavior
+ThemeSettingsView: Visual theme customization
+The UI employs the @ObservedObject and @StateObject patterns to maintain a reactive interface that updates automatically as underlying data changes.
+
+2. Coordination Layer
+This layer manages the orchestration of the application's features:
+
+AppCoordinator: Central coordinator that manages the application state and coordinates between subsystems
+TransactionManager: Handles the persistence and retrieval of scan records
+ScanHandler: Coordinates the scanning process
+PhysicalDriveTracker: Associates partitions with their physical drives
+DriveEjectHandler: Manages the safe ejection process
+3. Core Functionality Layer
+The components that implement the primary features:
+
+VolumeMonitor: Detects drive connection and disconnection events
+ScanEngine: Interfaces with ClamAV to perform virus scanning
+FileCounter: Accurately counts and estimates files on volumes
+PrintManager: Handles receipt printing to connected printers
+AudioCueManager: Provides audio feedback for key operations
+AuditLogger: Maintains a detailed log of all operations
+4. System Integration Layer
+Low-level components that interface with macOS services:
+
+ClamAV Integration: Shell script wrappers and process management
+Disk API Integration: For volume monitoring and ejection
+Printing System Integration: For automated report printing
+Concurrency Model
+DriveScanner utilizes Swift's modern concurrency features:
+
+Swift Concurrency: Uses Swift's async/await and Task for non-blocking operations
+Actor Isolation: Key components like ScanState are implemented as actors to ensure thread safety
+MainActor: UI updates are explicitly performed on the main actor
+Example from ScanHandler.swift:
+
+swift
+@MainActor
+final class ScanHandler {
+    func startScanning(
+        volume: ExternalVolume,
+        state: VolumeScanState,
+        autoPrintEnabled: Bool,
+        // ...
+    ) -> Task<Void, Never> {
+        return Task {
+            do {
+                // Asynchronous operations with await
+                let fileCount = try await fileCounter.countFiles(in: volume) { count in
+                    Task { @MainActor in
+                        // UI updates on main actor
+                        state.fileCount = count
+                        state.fileCountRange = "\(state.minFileCount)-\(state.maxFileCount)"
+                    }
+                }
+                // ...
+            } catch {
+                // Error handling
+            }
+        }
+    }
+}
+Data Flow
+Data flows through the application in the following sequence:
+
+Drive Detection: VolumeMonitor detects new drives
+Coordination: AppCoordinator initiates the scan process
+Scanning: ScanHandler delegates to FileCounter and ScanEngine
+Results Processing: Scan results are collected and stored
+Notification: System is notified of scan completion
+Printing: PrintManager prints results report
+Ejection: DriveEjectHandler safely ejects the drive
+State Management
+The application uses a combination of state management approaches:
+
+ObservableObject Pattern: Core state containers implement ObservableObject
+Published Properties: Key state variables use @Published for UI reactivity
+State Propagation: Changes propagate through the coordination layer
+Persistent State: TransactionManager persists state across app launches
+Error Handling
+Robust error handling is implemented throughout:
+
+Structured Error Types: Domain-specific error types for clear error categorization
+Graceful Degradation: Fallback behaviors when operations fail
+User Feedback: Visual and audio cues inform the user of issues
+Logging: Comprehensive logging for diagnostic purposes
+Extensibility Points
+The architecture provides several extensibility points:
+
+Scan Engine: The ClamAV integration could be replaced with another engine
+Theme System: New themes can be added by extending the theme definitions
+File Filtering: The extension filtering system is configurable
+Security Considerations
+Security is paramount in a virus scanning application:
+
+Sandboxing: Operation within macOS security boundaries
+Entitlements: Precise entitlements for necessary functionality
+Secure Resources: Careful management of secure-scoped bookmarks
+Update Mechanism: Secure update pathway for virus definitions
+Implementation Challenges and Solutions
+Multi-Partition Drive Handling
+Challenge: Coordinating scanning across multiple partitions of the same physical drive.
+
+Solution: The PhysicalDriveTracker associates partitions with their physical drives using BSD device identifiers. When all partitions have been scanned, the system triggers the safe ejection process.
+
+Reliable Printing
+Challenge: Ensuring reliable printing across various printer models and macOS versions.
+
+Solution: The PrintManager implements multiple fallback strategies and retry mechanisms to handle printing edge cases, particularly on macOS Monterey.
+
+Audio Feedback Reliability
+Challenge: Audio cues sometimes failing to play, especially on macOS Monterey.
+
+Solution: The AudioCueManager implements a sophisticated fallback system with multiple playback attempts and system sound fallbacks when primary audio playback fails.
+
+Performance Optimizations
+Several performance optimizations are employed:
+
+Incremental File Processing: Large volumes are processed incrementally
+Selective Scanning: Configurable extension filtering to skip safe file types
+Concurrent Operations: Parallel operations where appropriate
+Resource Limiting: Careful management of system resources
+Conclusion
+DriveScanner's architecture demonstrates thoughtful design patterns and Swift best practices, with particular attention to:
+
+Clean separation of concerns
+Modern Swift concurrency
+Robust error handling
+Graceful degradation
+Deep system integration
+This architecture enables the application to provide a seamless, reliable scanning experience while maintaining flexibility for future enhancements.
+
