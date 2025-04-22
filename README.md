@@ -1,6 +1,7 @@
 AutomatedAVScanner
 
-https://github.com/thokzz/AutomatedAVScanner/blob/main/assets/AutomatedAVScanner%20App%20Scanning.png
+![Uploading AutomatedAVScanner App Scanning.png…]()
+
 
 Automated USB & External Drive Virus Scanner for macOS
 DriveScanner is a powerful macOS utility designed to automatically scan external drives for malware the moment they're connected. Built with Swift 6 and a modern SwiftUI interface, this application provides enterprise-grade protection with minimal user interaction required.
