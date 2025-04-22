@@ -17,6 +17,23 @@ Smart File Filtering: Optimizes scan speed by selectively filtering safe file ty
 ClamAV Integration: Uses industry-standard ClamAV engine for reliable virus detection
 Customizable Themes: Multiple visual themes to match your preference
 
+### 🖼️ App Screenshots
+
+#### 🔍 Scanning View
+![Scanning](https://github.com/thokzz/AutomatedAVScanner/blob/main/assets/AutomatedAVScanner%20App%20Scanning.png?raw=true)
+
+#### ⚙️ Settings View
+![Settings](https://github.com/thokzz/AutomatedAVScanner/blob/main/assets/AutomatedAVScanner%20App%20Settings.png?raw=true)
+
+#### 🧾 Main App Interface
+![App Interface](https://github.com/thokzz/AutomatedAVScanner/blob/main/assets/AutomatedAVScanner%20App.png?raw=true)
+
+#### 📋 Transaction Details
+![Transaction Details](https://github.com/thokzz/AutomatedAVScanner/blob/main/assets/AutomatedAVScanner%20Transaction%20Details.png?raw=true)
+
+#### 📑 Transactions List
+![Transactions List](https://github.com/thokzz/AutomatedAVScanner/blob/main/assets/AutomatedAVScanner%20Transactions.png?raw=true)
+
 📋 Technical Architecture
 DriveScanner leverages a multi-component architecture to deliver reliable and responsive performance:
 
